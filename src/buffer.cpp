@@ -44,10 +44,39 @@ BufMgr::~BufMgr() {
 
 void BufMgr::advanceClock()
 {
+	clockHand = (clockHand + 1) % numBufs;
 }
 
 void BufMgr::allocBuf(FrameId & frame) 
 {
+	unsigned int counter = 0;
+	while(true) {
+		if(counter == numBufs) {
+			throw BufferExceededException();
+		}
+		if(bufDescTable[clockHand].valid) {
+			if(bufDescTable[clockHand].refbit) {
+				bufDescTable[clockHand].refbit = false;
+				advanceClock();
+			} else {
+				if(bufDescTable[clockHand].pinCnt > 0) {
+					counter += 1;
+					advanceClock();
+				} else {
+					if(bufDescTable[clockHand].dirty) {
+						bufDescTable[clockHand].file->writePage(bufPool[clockHand]);
+					}
+					hashTable->remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
+					bufDescTable[clockHand].Clear();
+					frame = clockHand;
+					break;
+				}
+			}
+		} else {
+			frame = clockHand;
+			break;
+		}
+	}
 }
 
 	
