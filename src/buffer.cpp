@@ -1,4 +1,7 @@
 /**
+ * TODO add name + student ID + purpose of file (see page 9)
+ * Bloomest Jansen Chandra (9079689528, bjchandra@wisc.edu)
+ * 
  * @author See Contributors.txt for code contributors and overview of BadgerDB.
  *
  * @section LICENSE
@@ -44,29 +47,42 @@ BufMgr::~BufMgr() {
 
 void BufMgr::advanceClock()
 {
+	/// The modulo operation here is to make sure that the flow is circular 
 	clockHand = (clockHand + 1) % numBufs;
 }
 
 void BufMgr::allocBuf(FrameId & frame) 
 {
+	/// Counter that counts the the number of frames with non-empty pin count
 	unsigned int counter = 0;
+	
 	while(true) {
+		/// If all frames have at least 1 pin count, throw the exception
 		if(counter == numBufs) {
 			throw BufferExceededException();
 		}
+
+		/// Only consider a page if it's valid, otherwise it can be allocated
 		if(bufDescTable[clockHand].valid) {
+			/// Change refbit to 0 if it is 1 and move on, otherwise check pin count
 			if(bufDescTable[clockHand].refbit) {
 				bufDescTable[clockHand].refbit = false;
 				advanceClock();
 			} else {
+				/// Only consider frame with pin count 0, otherwise move on
 				if(bufDescTable[clockHand].pinCnt > 0) {
 					counter += 1;
 					advanceClock();
 				} else {
+					/// Flush the appropriate page if it's been modified
 					if(bufDescTable[clockHand].dirty) {
 						bufDescTable[clockHand].file->writePage(bufPool[clockHand]);
 					}
+
+					/// remove the appropriate entry from the hash table
 					hashTable->remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
+					
+					/// Clear current frame and return the output via the given pointer
 					bufDescTable[clockHand].Clear();
 					frame = clockHand;
 					break;
