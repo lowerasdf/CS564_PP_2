@@ -17,6 +17,7 @@
 #include "exceptions/bad_buffer_exception.h"
 #include "exceptions/hash_not_found_exception.h"
 
+
 namespace badgerdb { 
 
 //----------------------------------------
@@ -98,15 +99,66 @@ void BufMgr::allocBuf(FrameId & frame)
 	
 void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 {
+	FrameId frame;
+	try{
+		hashTable->lookup(file, pageNo, frame);
+		//if already in the buffer
+		bufDescTable[frame].pinCnt ++;
+		page = &bufPool[frame];
+
+	}catch(HashNotFoundException e){
+		//if not in the buffer, insert to the buffer
+		allocBuf(frame);
+		Page target = file->readPage(pageNo);
+		bufPool[frame] = target;
+		hashTable->insert(file, pageNo, frame);
+		bufDescTable[frame].Set(file, pageNo);
+		page = &target;
+	}
+	
+
 }
 
 
 void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty) 
 {
+	FrameId frame;
+	try{	
+		//find the file in hashtable
+		hashTable->lookup(file, pageNo, frame);
+
+		//if pin count has been set to 0 throw exception
+		if(bufDescTable[frame].pinCnt == 0){
+			throw PageNotPinnedException(file->filename(), pageNo, frame);
+		}else{
+			//decrease number of pin count
+			bufDescTable[frame].pinCnt --;
+		}
+		
+		if(dirty){
+			bufDescTable[frame].dirty = true;
+		}
+
+	}catch(HashNotFoundException e){
+		//do nothing
+	}
 }
 
 void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page) 
 {
+	//new page 
+	Page newP = file->allocatePage();
+	//find a frame from buf pool and insert newP into it
+	FrameId frame;
+	allocBuf(frame);
+	hashTable->insert(file, pageNo, frame);
+	bufDescTable[frame].Set(file, pageNo);
+	bufPool[frame] = newP;
+
+	//return page id and page
+	pageNo = newP.page_number();
+	page = &newP;
+	
 }
 
 void BufMgr::flushFile(const File* file) 
