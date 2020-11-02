@@ -104,6 +104,7 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 	try{
 		hashTable->lookup(file, pageNo, frame);
 		//if already in the buffer
+		bufDescTable[frame].refbit = true;
 		bufDescTable[frame].pinCnt ++;
 		page = &bufPool[frame];
 
@@ -114,7 +115,7 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 		bufPool[frame] = target;
 		hashTable->insert(file, pageNo, frame);
 		bufDescTable[frame].Set(file, pageNo);
-		page = &target;
+		page = &bufPool[frame];
 	}
 	
 
