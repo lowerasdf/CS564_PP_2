@@ -152,14 +152,15 @@ void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page)
 	//find a frame from buf pool and insert newP into it
 	FrameId frame;
 	allocBuf(frame);
-	hashTable->insert(file, pageNo, frame);
-	bufDescTable[frame].Set(file, pageNo);
 	bufPool[frame] = newP;
 
 	//return page id and page
-	pageNo = newP.page_number();
-	page = &newP;
+	page = &bufPool[frame];
+	pageNo = bufPool[frame].page_number();
 	
+	//update hash table and description table
+	hashTable->insert(file, pageNo, frame);
+	bufDescTable[frame].Set(file, pageNo);
 }
 
 /**
