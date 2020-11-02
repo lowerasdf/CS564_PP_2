@@ -172,7 +172,7 @@ void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page)
 void BufMgr::flushFile(const File* file) 
 {
 	//Scan each frame in the buffer pool
-	for (int frameNo = 0; frameNo < numBufs; frameNo++) {
+	for (std::uint32_t frameNo = 0; frameNo < numBufs; frameNo++) {
 
 		//find the page belong to the given file
 		if (bufDescTable[frameNo].file == file) {
@@ -218,7 +218,7 @@ void BufMgr::flushFile(const File* file)
 void BufMgr::disposePage(File* file, const PageId PageNo)
 {
 	//check if the frame is in the buffer pool
-	for (int frameNo = 0; frameNo < numBufs; frameNo++) {
+	for (std::uint32_t frameNo = 0; frameNo < numBufs; frameNo++) {
 		if (bufDescTable[frameNo].pageNo == PageNo) {
 
 			//if find the frame in the buffer pool, delete the page from the buffer pool

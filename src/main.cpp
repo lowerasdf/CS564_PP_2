@@ -142,7 +142,7 @@ void testBufMgr()
 	//Test buffer manager
 	//Comment tests which you do not wish to run now. Tests are dependent on their preceding tests. So, they have to be run in the following order. 
 	//Commenting  a particular test requires commenting all tests that follow it else those tests would fail.
-	test1();
+	TEST1();
 	test2();
 	test3();
 	test4();
@@ -168,7 +168,7 @@ void testBufMgr()
 	std::cout << "\n" << "Passed all tests." << "\n";
 }
 
-void test1()
+void TEST1()
 {
 	//Allocating pages in a file...
 	for (i = 0; i < num; i++)
