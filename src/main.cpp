@@ -170,7 +170,6 @@ void testBufMgr()
 
 void test1()
 {
-	std::cout << "Start \n" ;
 	//Allocating pages in a file...
 	for (i = 0; i < num; i++)
 	{
@@ -179,7 +178,6 @@ void test1()
 		rid[i] = page->insertRecord(tmpbuf);
 		bufMgr->unPinPage(file1ptr, pid[i], true);
 	}
-	std::cout << "End \n" ;
 
 	//Reading pages back...
 	for (i = 0; i < num; i++)
