@@ -217,18 +217,20 @@ void BufMgr::flushFile(const File* file)
 */
 void BufMgr::disposePage(File* file, const PageId PageNo)
 {
-	//check if the frame is in the buffer pool
-	for (std::uint32_t frameNo = 0; frameNo < numBufs; frameNo++) {
-		if (bufDescTable[frameNo].pageNo == PageNo) {
+	FrameId frameNo;
+	try {
+		//check if the frame is in the buffer pool
+		hashTable->lookup(file, PageNo, frameNo);
 
-			//if find the frame in the buffer pool, delete the page from the buffer pool
-			hashTable->remove(file, PageNo);
+		//if find the frame in the buffer pool, delete the page from the buffer pool
+		hashTable->remove(file, PageNo);
 
-			//initialize the state of the frame
-			bufDescTable[frameNo].Clear();
-		}
+		//initialize the state of the frame
+		bufDescTable[frameNo].Clear();
 	}
-
+	catch (HashNotFoundException e) {
+		//if it is not in the buffer pool, throw HashNotFoundException
+	}
 	//delete the page from file
 	file->deletePage(PageNo);
 }
