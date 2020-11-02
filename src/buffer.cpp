@@ -1,8 +1,15 @@
 /**
- * TODO add name + student ID + purpose of file (see page 9)
- * Bloomest Jansen Chandra (9079689528, bjchandra@wisc.edu)
- * Mei Sun(9081669823, msun252@wisc.edu)
+ * Group Members:
+ * - Bloomest Chandra (9079689528, bjchandra@wisc.edu)
+ * - Mei Sun(9081669823, msun252@wisc.edu)
+ * - Nan Sun(XXXXXXXXXX, XXXXXXX@wisc.edu)
  * 
+ * Purpose:
+ * This file consists of the BufMng class that can simulate a buffer manager with clock algorithm
+ * for data processing engine, such as database management system. It maintains a buffer pool along
+ * with all functionalities to maintain faster access and read and write throughput. Buffer manager
+ * itself is responsible for bringing pages from disk to memory as necessary.
+ *
  * @author See Contributors.txt for code contributors and overview of BadgerDB.
  *
  * @section LICENSE
@@ -101,20 +108,29 @@ void BufMgr::allocBuf(FrameId & frame)
 void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 {
 	FrameId frame;
+	/// Case if already in the buffer, otherwise insert to the buffer
 	try{
+		/// Get a particular frame
 		hashTable->lookup(file, pageNo, frame);
-		//if already in the buffer
+		
+		/// Set appropriate refbit and pin count
 		bufDescTable[frame].refbit = true;
 		bufDescTable[frame].pinCnt ++;
+
+		/// Return the page
 		page = &bufPool[frame];
 
 	}catch(HashNotFoundException e){
-		//if not in the buffer, insert to the buffer
+		/// Allocate a new frame
 		allocBuf(frame);
+
+		/// Insert newly allocated page to buffer pool, hash table, & description Table
 		Page target = file->readPage(pageNo);
 		bufPool[frame] = target;
 		hashTable->insert(file, pageNo, frame);
 		bufDescTable[frame].Set(file, pageNo);
+
+		/// Return the page
 		page = &bufPool[frame];
 	}
 	
@@ -125,85 +141,80 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty) 
 {
 	FrameId frame;
+	/// Unpin page appropriately if found, otherwise do nothing
 	try{	
-		//find the file in hashtable
+		/// Find the file in hashtable
 		hashTable->lookup(file, pageNo, frame);
 
-		//if pin count has been set to 0 throw exception
+		///  If pin count has been set to 0 throw exception
 		if(bufDescTable[frame].pinCnt == 0){
 			throw PageNotPinnedException(file->filename(), pageNo, frame);
 		}else{
-			//decrease number of pin count
+			/// Decrease number of pin count
 			bufDescTable[frame].pinCnt --;
 		}
 		
+		/// Set the appropriate dirty bit
 		if(dirty){
 			bufDescTable[frame].dirty = true;
 		}
 
 	}catch(HashNotFoundException e){
-		//do nothing
+		/// Do nothing
 	}
 }
 
 void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page) 
 {
-	//new page 
+	/// New page 
 	Page newP = file->allocatePage();
-	//find a frame from buf pool and insert newP into it
+	/// Find a frame from buf pool and insert newP into it
 	FrameId frame;
 	allocBuf(frame);
 	bufPool[frame] = newP;
 
-	//return page id and page
+	/// Return page id and page
 	page = &bufPool[frame];
 	pageNo = bufPool[frame].page_number();
 	
-	//update hash table and description table
+	/// Update hash table and description table
 	hashTable->insert(file, pageNo, frame);
 	bufDescTable[frame].Set(file, pageNo);
 }
 
-/**
-* flush the dirty pages of a particular file in the buffer pool to the disk 
-*
-* @param file  the file the dirty page to be flushed belong to 
-* @throws PagePinnedException if the page of the file found in the buffer pool is pinned
-* @throws BadBufferException  if an invalid page belonging to the file is encountered
-*/
 void BufMgr::flushFile(const File* file) 
 {
-	//Scan each frame in the buffer pool
+	/// Scan each frame in the buffer pool
 	for (std::uint32_t frameNo = 0; frameNo < numBufs; frameNo++) {
 
-		//find the page belong to the given file
+		/// Find the page belong to the given file
 		if (bufDescTable[frameNo].file == file) {
 
-			//if the page found is pinned, throw PagePinnedException
+			/// If the page found is pinned, throw PagePinnedException
 			if (bufDescTable[frameNo].pinCnt != 0) {
 				throw PagePinnedException(file->filename(), bufDescTable[frameNo].pageNo, frameNo);
 			}
 
-			// if an invalid page belonging to the file is encountered, throw PagePinnedException
+			/// If an invalid page belonging to the file is encountered, throw PagePinnedException
 			if (bufDescTable[frameNo].valid == false) {
 				throw BadBufferException(frameNo, bufDescTable[frameNo].dirty, bufDescTable[frameNo].valid, bufDescTable[frameNo].refbit);
 			}
 
 
-			//(a)check the dirty bit
+			/// (a)check the dirty bit
 			if (bufDescTable[frameNo].dirty == true) {
 
-				//flush the page to the disk
+				/// Flush the page to the disk
 				bufDescTable[frameNo].file->writePage(bufPool[frameNo]);
-				//set the dirty bit to False
+				/// Set the dirty bit to False
 				bufDescTable[frameNo].dirty = false;
 
 			}
 
-			//(b)delete the page from the hashTable
+			/// (b)delete the page from the hashTable
 			hashTable->remove(bufDescTable[frameNo].file, bufDescTable[frameNo].pageNo);
 
-			//(c)initialize the state of the frame
+			/// (c)initialize the state of the frame
 			bufDescTable[frameNo].Clear();
 		}
 
@@ -211,29 +222,23 @@ void BufMgr::flushFile(const File* file)
 	}
 }
 
-/**
-* delete a particular page from a file, also remove it from the buffer pool if it is allocated there
-* 
-* @param file  the file the page to be removed from 
-* @param PageNo the number of the page to be disposed
-*/
 void BufMgr::disposePage(File* file, const PageId PageNo)
 {
 	FrameId frameNo;
 	try {
-		//check if the frame is in the buffer pool
+		/// Check if the frame is in the buffer pool
 		hashTable->lookup(file, PageNo, frameNo);
 
-		//if find the frame in the buffer pool, delete the page from the buffer pool
+		/// If find the frame in the buffer pool, delete the page from the buffer pool
 		hashTable->remove(file, PageNo);
 
-		//initialize the state of the frame
+		/// Initialize the state of the frame
 		bufDescTable[frameNo].Clear();
 	}
 	catch (HashNotFoundException e) {
-		//if it is not in the buffer pool, throw HashNotFoundException
+		/// If it is not in the buffer pool
 	}
-	//delete the page from file
+	/// Delete the page from file
 	file->deletePage(PageNo);
 }
 
