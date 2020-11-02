@@ -52,6 +52,18 @@ BufMgr::BufMgr(std::uint32_t bufs)
 
 
 BufMgr::~BufMgr() {
+	
+	/// Flush out all dirty bits
+	for (std::uint32_t frameNo; frameNo < numbufs; frameNo++) {
+		if (bufDescTable[frameNo].dirty == true) {
+			/// Flush the page to the disk
+			bufDescTable[frameNo].file->writePage(bufPool[frameNo]);
+		}
+	}
+
+	///release the memory
+	delete[] bufDescTable;
+	delete[] bufPool;
 }
 
 void BufMgr::advanceClock()
