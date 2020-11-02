@@ -120,7 +120,7 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 		/// Return the page
 		page = &bufPool[frame];
 
-	}catch(HashNotFoundException e){
+	}catch(const HashNotFoundException& e){
 		/// Allocate a new frame
 		allocBuf(frame);
 
@@ -159,7 +159,7 @@ void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty)
 			bufDescTable[frame].dirty = true;
 		}
 
-	}catch(HashNotFoundException e){
+	}catch(const HashNotFoundException& e){
 		/// Do nothing
 	}
 }
@@ -235,7 +235,7 @@ void BufMgr::disposePage(File* file, const PageId PageNo)
 		/// Initialize the state of the frame
 		bufDescTable[frameNo].Clear();
 	}
-	catch (HashNotFoundException e) {
+	catch (const HashNotFoundException& e) {
 		/// If it is not in the buffer pool
 	}
 	/// Delete the page from file
