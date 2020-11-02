@@ -64,6 +64,7 @@ BufMgr::~BufMgr() {
 	///release the memory
 	delete[] bufDescTable;
 	delete[] bufPool;
+	delete[] hashTable;
 }
 
 void BufMgr::advanceClock()
