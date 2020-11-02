@@ -1,6 +1,7 @@
 /**
  * TODO add name + student ID + purpose of file (see page 9)
  * Bloomest Jansen Chandra (9079689528, bjchandra@wisc.edu)
+ * Mei Sun(9081669823, msun252@wisc.edu)
  * 
  * @author See Contributors.txt for code contributors and overview of BadgerDB.
  *
@@ -161,12 +162,75 @@ void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page)
 	
 }
 
+/**
+* flush the dirty pages of a particular file in the buffer pool to the disk 
+*
+* @param file  the file the dirty page to be flushed belong to 
+* @throws PagePinnedException if the page of the file found in the buffer pool is pinned
+* @throws BadBufferException  if an invalid page belonging to the file is encountered
+*/
 void BufMgr::flushFile(const File* file) 
 {
+	//Scan each frame in the buffer pool
+	for (int frameNo = 0; frameNo < numBufs; frameNo++) {
+
+		//find the page belong to the given file
+		if (bufDescTable[frameNo].file == file) {
+
+			//if the page found is pinned, throw PagePinnedException
+			if (bufDescTable[frameNo].pinCnt != 0) {
+				throw PagePinnedException(file->filename(), bufDescTable[frameNo].pageNo, frameNo);
+			}
+
+			// if an invalid page belonging to the file is encountered, throw PagePinnedException
+			if (bufDescTable[frameNo].valid == false) {
+				throw BadBufferException(frameNo, bufDescTable[frameNo].dirty, bufDescTable[frameNo].valid, bufDescTable[frameNo].refbit);
+			}
+
+
+			//(a)check the dirty bit
+			if (bufDescTable[frameNo].dirty == true) {
+
+				//flush the page to the disk
+				bufDescTable[frameNo].file->writePage(bufPool[frameNo]);
+				//set the dirty bit to False
+				bufDescTable[frameNo].dirty = false;
+
+			}
+
+			//(b)delete the page from the hashTable
+			hashTable->remove(bufDescTable[frameNo].file, bufDescTable[frameNo].pageNo);
+
+			//(c)initialize the state of the frame
+			bufDescTable[frameNo].Clear();
+		}
+
+
+	}
 }
 
+/**
+* delete a particular page from a file, also remove it from the buffer pool if it is allocated there
+* 
+* @param file  the file the page to be removed from 
+* @param PageNo the number of the page to be disposed
+*/
 void BufMgr::disposePage(File* file, const PageId PageNo)
 {
+	//check if the frame is in the buffer pool
+	for (int frameNo = 0; frameNo < numBufs; frameNo++) {
+		if (bufDescTable[frameNo].pageNo == PageNo) {
+
+			//if find the frame in the buffer pool, delete the page from the buffer pool
+			hashTable->remove(file, PageNo);
+
+			//initialize the state of the frame
+			bufDescTable[frameNo].Clear();
+		}
+	}
+
+	//delete the page from file
+	file->deletePage(PageNo);
 }
 
 void BufMgr::printSelf(void) 
