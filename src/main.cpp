@@ -205,7 +205,7 @@ void test2()
 		rid2 = page2->insertRecord(tmpbuf);
 
 		long int index = random() % num;
-    pageno1 = pid[index];
+    	pageno1 = pid[index];
 		bufMgr->readPage(file1ptr, pageno1, page);
 		sprintf((char*)tmpbuf, "test.1 Page %u %7.1f", pageno1, (float)pageno1);
 		if(strncmp(page->getRecord(rid[index]).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
@@ -320,4 +320,47 @@ void test6()
 		bufMgr->unPinPage(file1ptr, i, true);
 
 	bufMgr->flushFile(file1ptr);
+}
+void test7()
+{
+	//should successfully add after dispose
+	for (i = 1; i <= num; i++) {
+		bufMgr->readPage(file1ptr, i, page);
+	}
+
+	for (i = 1; i <= 10; i++) {
+		bufMgr->disposePage(file1ptr, i);
+	}
+	
+	try
+	{
+		for (i = 1; i <= 10; i++) {
+			bufMgr->readPage(file2ptr, i, page);	
+		}
+		std::cout << "Test 7 passed" << "\n";
+	}
+	catch(const BufferExceededException &e)
+	{
+		PRINT_ERROR("ERROR :: Dispose before read new pages, shoud not throw BufferExceededException");
+	}
+	for (i = 1; i <= 10; i++) 
+		bufMgr->unPinPage(file2ptr, i, true);
+
+	for (i = 11; i <= num; i++) 
+		bufMgr->unPinPage(file1ptr, i, true);
+
+	bufMgr->flushFile(file1ptr);
+	bufMgr->flushFile(file2ptr);
+}
+
+// void test8()
+// {
+
+// 	std::cout << "Test 8 passed" << "\n";
+// }
+
+// void test9()
+// {
+
+// 	std::cout << "Test 9 passed" << "\n";
 }
