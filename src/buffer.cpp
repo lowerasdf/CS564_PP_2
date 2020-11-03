@@ -2,7 +2,7 @@
  * Group Members:
  * - Bloomest Chandra (9079689528, bjchandra@wisc.edu)
  * - Mei Sun(9081669823, msun252@wisc.edu)
- * - Nan Sun(XXXXXXXXXX, XXXXXXX@wisc.edu)
+ * - Nan Sun(9079796265, nsun25@wisc.edu)
  * 
  * Purpose:
  * This file consists of the BufMng class that can simulate a buffer manager with clock algorithm
