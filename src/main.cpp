@@ -36,6 +36,7 @@ void test3();
 void test4();
 void test5();
 void test6();
+void test7();
 void testBufMgr();
 
 int main() 
@@ -148,6 +149,7 @@ void testBufMgr()
 	test4();
 	test5();
 	test6();
+	test7();
 
 	//Close files before deleting them
 	file1.~File();
@@ -321,9 +323,14 @@ void test6()
 
 	bufMgr->flushFile(file1ptr);
 }
+
+/**
+ * Additional testing for the buffer manager. It should be able to handle the case
+ * when we read additional pages after disposal.
+ */
 void test7()
 {
-	//should successfully add after dispose
+	/// Preparing the disposal before adding some more
 	for (i = 1; i <= num; i++) {
 		bufMgr->readPage(file1ptr, i, page);
 	}
@@ -332,6 +339,7 @@ void test7()
 		bufMgr->disposePage(file1ptr, i);
 	}
 	
+	/// We would expect this not to catch any exception
 	try
 	{
 		for (i = 1; i <= 10; i++) {
@@ -343,6 +351,8 @@ void test7()
 	{
 		PRINT_ERROR("ERROR :: Dispose before read new pages, shoud not throw BufferExceededException");
 	}
+
+	/// Clean up
 	for (i = 1; i <= 10; i++) 
 		bufMgr->unPinPage(file2ptr, i, true);
 
@@ -351,16 +361,4 @@ void test7()
 
 	bufMgr->flushFile(file1ptr);
 	bufMgr->flushFile(file2ptr);
-}
-
-// void test8()
-// {
-
-// 	std::cout << "Test 8 passed" << "\n";
-// }
-
-// void test9()
-// {
-
-// 	std::cout << "Test 9 passed" << "\n";
 }
